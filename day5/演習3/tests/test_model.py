@@ -171,3 +171,23 @@ def test_model_reproducibility(sample_data, preprocessor):
     assert np.array_equal(
         predictions1, predictions2
     ), "モデルの予測結果に再現性がありません"
+
+def test_model_no_regression(train_model):
+    """新旧モデル間の性能劣化がないか検証"""
+    model_new, X_test, y_test = train_model
+
+    # 過去のモデルをロード
+    old_model_path = os.path.join(MODEL_DIR, "old_model.pkl")
+    if not os.path.exists(old_model_path):
+        pytest.skip("過去モデルが存在しないためスキップします")
+
+    with open(old_model_path, "rb") as f:
+        model_old = pickle.load(f)
+
+    # 精度比較
+    acc_new = accuracy_score(y_test, model_new.predict(X_test))
+    acc_old = accuracy_score(y_test, model_old.predict(X_test))
+
+    # 新しいモデルの精度が劣っていないことを検証
+    assert acc_new >= acc_old, f"モデルの精度が劣化しています（新: {acc_new} < 旧: {acc_old}）"
+
