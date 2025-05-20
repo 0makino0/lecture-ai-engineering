@@ -172,6 +172,7 @@ def test_model_reproducibility(sample_data, preprocessor):
         predictions1, predictions2
     ), "モデルの予測結果に再現性がありません"
 
+
 def test_model_no_regression(train_model):
     """新旧モデル間の性能劣化がないかを精度およびF1スコアで検証する"""
     from sklearn.metrics import f1_score
@@ -203,6 +204,9 @@ def test_model_no_regression(train_model):
     # 精度・F1スコアともに新モデルが著しく劣化していないことを確認
     tolerance = 0.01  # 許容される最大劣化率
 
-    assert acc_new + tolerance >= acc_old, f"精度が劣化しています（新: {acc_new:.4f} < 旧: {acc_old:.4f}）"
-    assert f1_new + tolerance >= f1_old, f"F1スコアが劣化しています（新: {f1_new:.4f} < 旧: {f1_old:.4f}）"
-
+    assert (
+        acc_new + tolerance >= acc_old
+    ), f"精度が劣化しています（新: {acc_new:.4f} < 旧: {acc_old:.4f}）"
+    assert (
+        f1_new + tolerance >= f1_old
+    ), f"F1スコアが劣化しています（新: {f1_new:.4f} < 旧: {f1_old:.4f}）"
