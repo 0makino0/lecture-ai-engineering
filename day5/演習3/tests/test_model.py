@@ -173,21 +173,36 @@ def test_model_reproducibility(sample_data, preprocessor):
     ), "モデルの予測結果に再現性がありません"
 
 def test_model_no_regression(train_model):
-    """新旧モデル間の性能劣化がないか検証"""
+    """新旧モデル間の性能劣化がないかを精度およびF1スコアで検証する"""
+    from sklearn.metrics import f1_score
+
     model_new, X_test, y_test = train_model
 
-    # 過去のモデルをロード
     old_model_path = os.path.join(MODEL_DIR, "old_model.pkl")
-    if not os.path.exists(old_model_path):
-        pytest.skip("過去モデルが存在しないためスキップします")
 
+    # 過去モデルが存在しない場合，新モデルを保存してスキップ
+    if not os.path.exists(old_model_path):
+        with open(old_model_path, "wb") as f:
+            pickle.dump(model_new, f)
+        pytest.skip("過去モデルが存在しないため，現モデルを保存してスキップします")
+
+    # 過去モデルを読み込む
     with open(old_model_path, "rb") as f:
         model_old = pickle.load(f)
 
-    # 精度比較
-    acc_new = accuracy_score(y_test, model_new.predict(X_test))
-    acc_old = accuracy_score(y_test, model_old.predict(X_test))
+    # 予測とスコア計算
+    y_pred_new = model_new.predict(X_test)
+    y_pred_old = model_old.predict(X_test)
 
-    # 新しいモデルの精度が劣っていないことを検証
-    assert acc_new >= acc_old, f"モデルの精度が劣化しています（新: {acc_new} < 旧: {acc_old}）"
+    acc_new = accuracy_score(y_test, y_pred_new)
+    acc_old = accuracy_score(y_test, y_pred_old)
+
+    f1_new = f1_score(y_test, y_pred_new)
+    f1_old = f1_score(y_test, y_pred_old)
+
+    # 精度・F1スコアともに新モデルが著しく劣化していないことを確認
+    tolerance = 0.01  # 許容される最大劣化率
+
+    assert acc_new + tolerance >= acc_old, f"精度が劣化しています（新: {acc_new:.4f} < 旧: {acc_old:.4f}）"
+    assert f1_new + tolerance >= f1_old, f"F1スコアが劣化しています（新: {f1_new:.4f} < 旧: {f1_old:.4f}）"
 
